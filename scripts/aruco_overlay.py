@@ -135,6 +135,15 @@ class ArucoOverlayNode( object ):
 		image_in_cv2 = bridge.imgmsg_to_cv2( image_in, 'bgr8' )
 		image_in_cv2 = cv2.line( image_in_cv2, \
 			( int(fids[0][0]), int(fids[0][1])), (int(fids[1][0]), int(fids[1][1])), (0,0,255), 2 )
+		
+		image_in_cv2 = cv2.line( image_in_cv2, \
+			( int(fids[1][0]), int(fids[1][1])), (int(fids[2][0]), int(fids[2][1])), (0,0,255), 2 )
+		
+		image_in_cv2 = cv2.line( image_in_cv2, \
+			( int(fids[2][0]), int(fids[2][1])), (int(fids[3][0]), int(fids[3][1])), (0,0,255), 2 )
+		
+		image_in_cv2 = cv2.line( image_in_cv2, \
+			( int(fids[3][0]), int(fids[3][1])), (int(fids[0][0]), int(fids[0][1])), (0,0,255), 2 )
 
 		return  bridge.cv2_to_imgmsg( image_in_cv2, 'bgr8' )
 
