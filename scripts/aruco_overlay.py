@@ -40,8 +40,6 @@
 
 from __future__ import print_function
 import sys
-import argparse
-import Queue
 import numpy as np
 
 import rospy
@@ -55,7 +53,7 @@ from geometry_msgs.msg import Vector3, Transform, Quaternion
 
 
 
-
+# TODO: change to Transform stamped
 
 
 
@@ -209,7 +207,10 @@ class ArucoOverlayNode( object ):
 
 
 	def draw_axis( self, img, R, t, K, scale ) :
-	    # unit is mm
+	    # img = cv2 image
+	    # R = 3x3 rotation matrix (DCM)
+	    # t = 3x1 translation vector
+	    # K = 3x3 camera intrinsics matrix 
 	    # rotV is a 3x1
 	    rotV, _ = cv2.Rodrigues(R)
 	    points = np.float32([[scale, 0, 0], [0, scale, 0], [0, 0, scale], [0, 0, 0]]).reshape(-1, 3)
@@ -223,13 +224,20 @@ class ArucoOverlayNode( object ):
 
 
 
-def main():
+def main( ):
+
+
+	args = rospy.myargv( argv=sys.argv )
+	# Note arg[0] is calling filename
+	#aruco_overlay_node = ArucoOverlayNode( image_in=arg[1], intrinsics=arg[2] )
+
+
 	aruco_overlay_node = ArucoOverlayNode( image_in='/camera/infra1/image_rect_raw', intrinsics='/camera/infra1/camera_info')
 
 if __name__ == '__main__':
 	try:
 		main()
-	except rospy.ROSInterruptException:
+	except rospy.ROSInterruptException, err:
 		pass
 
 
