@@ -229,10 +229,13 @@ def main( ):
 
 	args = rospy.myargv( argv=sys.argv )
 	# Note arg[0] is calling filename
-	#aruco_overlay_node = ArucoOverlayNode( image_in=arg[1], intrinsics=arg[2] )
+	aruco_overlay_node = ArucoOverlayNode( name=args[1], image_in=args[2], intrinsics=args[3], \
+		extrinsics=args[4], fiducials=args[5] )
 
 
-	aruco_overlay_node = ArucoOverlayNode( image_in='/camera/infra1/image_rect_raw', intrinsics='/camera/infra1/camera_info')
+	# aruco_overlay_node = ArucoOverlayNode( \
+	# 	image_in='/camera/infra1/image_rect_raw', \
+	# 	intrinsics='/camera/infra1/camera_info')
 
 if __name__ == '__main__':
 	try:

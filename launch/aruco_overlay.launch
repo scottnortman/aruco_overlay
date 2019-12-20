@@ -48,11 +48,24 @@
 			<arg name="image" value="image_rect_raw" />
 			<arg name="fiducial_len" value="0.1" />
 			<arg name="dictionary" value="0" />
+			<arg name="node_name" value="aruco_detect1" />
 		</include>
 	</group>
 
+	<group if="$(arg ArucoDetect)">
+		<include file="$(find aruco_detect)/launch/aruco_detect.launch" >
+			<arg name="camera" value="camera/infra2" />
+			<arg name="image" value="image_rect_raw" />
+			<arg name="fiducial_len" value="0.1" />
+			<arg name="dictionary" value="0" />
+			<ang name="node_name" value="aruco_detect2" />
+		</include>
+	</group>
+
+
 	<group if="$(arg ArucoOverlay)">
-		<node name="aruco_overlay_node" pkg="aruco_overlay" type="aruco_overlay.py" required="true" output="screen" />
+		<node name="aruco_overlay_node" pkg="aruco_overlay" type="aruco_overlay.py" required="true" output="screen" 
+			args="aruco_overlay /camera/infra1/image_rect_raw /camera/infra1/camera_info /fiducial_transforms /fiducial_vertices "/>
 	</group>
 
 	<group if="$(arg LiveVideo)" >
