@@ -40,6 +40,7 @@
 
 from __future__ import print_function
 import sys
+import argparse
 import numpy as np
 
 import rospy
@@ -53,20 +54,20 @@ from geometry_msgs.msg import Vector3, Transform, Quaternion
 
 
 
-# TODO: change to Transform stamped
+# TODO: change to Transform stamped?
 
 
 
 class ArucoOverlayNode( object ):
 
-	def __init__( self, name='aruco_overlay', image_in='/camera', intrinsics='/camera_info', 
-		extrinsics='/fiducial_transforms', fiducials='/fiducial_vertices', rate=10.0 ):
+	def __init__( self, name='aruco_overlay', image_in='/camera', cam_info='/camera_info', 
+		fid_trans='/fiducial_transforms', fid_verts='/fiducial_vertices', rate=10.0 ):
 		
 		self.name = name
 		self.image_in = image_in
-		self.intrinsics = intrinsics
-		self.extrinsics = extrinsics
-		self.fiducials = fiducials
+		self.cam_info = cam_info
+		self.fid_trans = fid_trans
+		self.fid_verts = fid_verts
 		self.rate = rate
 
 
@@ -74,22 +75,22 @@ class ArucoOverlayNode( object ):
 		rospy.loginfo( '\n'\
 			'aruco_overlay node: [{}] started with parameters: \n' \
 			'image_in:\t\t[\'{}\']\n' \
-			'intrinsics:\t\t[\'{}\']\n' \
-			'extrinsics:\t\t[\'{}\']\n'\
-			'fiducials:\t\t[\'{}\']\n' \
+			'cam_info:\t\t[\'{}\']\n' \
+			'fid_trans:\t\t[\'{}\']\n'\
+			'fid_verts:\t\t[\'{}\']\n' \
 			'image_out:\t\t[\'{}\']\n' 
 			'rate:\t\t\t[{}]' \
-			.format( self.name, self.image_in, self.intrinsics, self.extrinsics, self.fiducials, \
+			.format( self.name, self.image_in, self.cam_info, self.fid_trans, self.fid_verts, \
 				'/annotated_image_raw', self.rate ) )
 
 
 		# Filter subscriptions and time synchronize
 		image_in_sub = message_filters.Subscriber( self.image_in, Image )
-		intrinsics_sub = message_filters.Subscriber( self.intrinsics, CameraInfo )
-		fiducials_sub = message_filters.Subscriber( self.fiducials, FiducialArray )
-		extrinsics_sub = message_filters.Subscriber( self.extrinsics, FiducialTransformArray )
+		cam_info_sub = message_filters.Subscriber( self.cam_info, CameraInfo )
+		fid_verts_sub = message_filters.Subscriber( self.fid_verts, FiducialArray )
+		fid_trans_sub = message_filters.Subscriber( self.fid_trans, FiducialTransformArray )
 		time_sync = message_filters.TimeSynchronizer( \
-			[image_in_sub, intrinsics_sub, fiducials_sub, extrinsics_sub], 10 )
+			[image_in_sub, cam_info_sub, fid_verts_sub, fid_trans_sub], 10 )
 
 		time_sync.registerCallback( self.msgs_callback )
 
@@ -101,7 +102,7 @@ class ArucoOverlayNode( object ):
 		rospy.spin()
 
 		#print( "ArucoOverlay {}".format(1) )
-	def msgs_callback( self, image, intrinsics, fiducialArray, fiducialTransformArray ):
+	def msgs_callback( self, image, cam_info, fiducialArray, fiducialTransformArray ):
 
 		if len( fiducialArray.fiducials ) > 0 :
 
@@ -126,18 +127,15 @@ class ArucoOverlayNode( object ):
 				x3 = fiducialArray.fiducials[ff].x3
 				y3 = fiducialArray.fiducials[ff].y3
 
-
-				#rospy.loginfo( '{}:[{},{}], [{},{}], [{},{}], [{},{}]'.format(fi,x0,y0,x1,y1,x2,y2,x3,y3) )
-
 				fids = [[x0,y0],[x1,y1],[x2,y2],[x3,y3]]
 
 		
 			#annotated_image = image
 			#self.publisher.publish( annotated_image )
 
-			print( intrinsics.K )
+			#print( cam_info.K )
 
-			self.publisher.publish( self.draw_aruco_3d( image, fids, tx, intrinsics.K ) )
+			self.publisher.publish( self.draw_aruco_3d( image, fids, tx, cam_info.K, aruco_id=fi ) )
 
 		else :
 
@@ -145,9 +143,7 @@ class ArucoOverlayNode( object ):
 			self.publisher.publish( image )
 
 
-		# do some stuff
-
-	def draw_aruco_3d( self, image_in, fids, tx, K ):
+	def draw_aruco_3d( self, image_in, fids, tx, K, aruco_id=None ):
 
 		# Convert image to cv2 for drawing
 		bridge = CvBridge()
@@ -155,49 +151,28 @@ class ArucoOverlayNode( object ):
 
 		# Add bounding box around aruco marker
 		image_in_cv2 = cv2.line( image_in_cv2, \
-			( int(fids[0][0]), int(fids[0][1])), (int(fids[1][0]), int(fids[1][1])), (0,0,255), 2 )
+			( int(fids[0][0]), int(fids[0][1])), (int(fids[1][0]), int(fids[1][1])), (255,255,255), 2 )
 		
 		image_in_cv2 = cv2.line( image_in_cv2, \
-			( int(fids[1][0]), int(fids[1][1])), (int(fids[2][0]), int(fids[2][1])), (0,0,255), 2 )
+			( int(fids[1][0]), int(fids[1][1])), (int(fids[2][0]), int(fids[2][1])), (255,255,255), 2 )
 		
 		image_in_cv2 = cv2.line( image_in_cv2, \
-			( int(fids[2][0]), int(fids[2][1])), (int(fids[3][0]), int(fids[3][1])), (0,0,255), 2 )
+			( int(fids[2][0]), int(fids[2][1])), (int(fids[3][0]), int(fids[3][1])), (255,255,255), 2 )
 		
 		image_in_cv2 = cv2.line( image_in_cv2, \
-			( int(fids[3][0]), int(fids[3][1])), (int(fids[0][0]), int(fids[0][1])), (0,0,255), 2 )
+			( int(fids[3][0]), int(fids[3][1])), (int(fids[0][0]), int(fids[0][1])), (255,255,255), 2 )
+
 
 		# Given ROS Transform as tx.translation = Vector3 and tx.rotation = Quaternion, we
 		#	need to convert into a 3x3 rotation matrix and a 3x1 translation vector; get this
 		#	by first converting into a 4x4 homogeneous transform, then extracting needed parts
 		tr = tf.TransformerROS()
-
 		hgt = tr.fromTranslationRotation( ( tx.translation.x, tx.translation.y, tx.translation.z ), \
 			( tx.rotation.x, tx.rotation.y, tx.rotation.z, tx.rotation.w ) )
 
-		K = np.array(K).reshape(3,3)
+		K = np.array(K).reshape(3,3) 
 
-		image_in_cv2 = self.draw_axis( image_in_cv2, hgt[0:3,0:3], hgt[0:3,3], K, scale=0.1 )
-
-		# draw dot in center
-		#v2.circle(image, center_coordinates, radius, color, thickness)
-		#shu
-
-		#image_in_cv2 = cv2.circle(image, center_coordinates, radius, color, thickness)
-
-		
-		# Transform tx passed as 'translation' => x y z and 'rotation' => x y z w
-		# [u v 1]' = K * [X Y Z]'
-
-		#axis = np.float32([[3,0,0], [0,3,0], [0,0,-3]]).reshape(-1,3)
-
-		# project 3D points to image plane
-        #imgpts, jac = cv2.projectPoints(axis, rvecs, tvecs, mtx, dist)
-
-        #img = draw(img,corners2,imgpts)
-        #cv2.imshow('img',img)
-
-
-
+		image_in_cv2 = self.draw_axis( image_in_cv2, hgt[0:3,0:3], hgt[0:3,3], K, scale=0.1, aruco_id=aruco_id )
 
 		return  bridge.cv2_to_imgmsg( image_in_cv2, 'bgr8' )
 
@@ -206,19 +181,30 @@ class ArucoOverlayNode( object ):
 		# https://stackoverflow.com/questions/30207467/how-to-draw-3d-coordinate-axes-with-opencv-for-face-pose-estimation
 
 
-	def draw_axis( self, img, R, t, K, scale ) :
-	    # img = cv2 image
-	    # R = 3x3 rotation matrix (DCM)
-	    # t = 3x1 translation vector
-	    # K = 3x3 camera intrinsics matrix 
-	    # rotV is a 3x1
-	    rotV, _ = cv2.Rodrigues(R)
-	    points = np.float32([[scale, 0, 0], [0, scale, 0], [0, 0, scale], [0, 0, 0]]).reshape(-1, 3)
-	    axisPoints, _ = cv2.projectPoints(points, rotV, t, K, (0, 0, 0, 0))
-	    img = cv2.line(img, tuple(axisPoints[3].ravel()), tuple(axisPoints[0].ravel()), (255,0,0), 3)
-	    img = cv2.line(img, tuple(axisPoints[3].ravel()), tuple(axisPoints[1].ravel()), (0,255,0), 3)
-	    img = cv2.line(img, tuple(axisPoints[3].ravel()), tuple(axisPoints[2].ravel()), (0,0,255), 3)
-	    return img
+	def draw_axis( self, img, R, t, K, scale, aruco_id=None ) :
+		# img = cv2 image
+		# R = 3x3 rotation matrix (DCM)
+		# t = 3x1 translation vector
+		# K = 3x3 camera intrinsics matrix 
+		# rotV is a 3x1
+		rotV, _ = cv2.Rodrigues(R)
+		points = np.float32([[scale, 0, 0], [0, scale, 0], [0, 0, scale], [0, 0, 0]]).reshape(-1, 3)
+		axisPoints, _ = cv2.projectPoints(points, rotV, t, K, (0, 0, 0, 0))
+		img = cv2.line(img, tuple(axisPoints[3].ravel()), tuple(axisPoints[0].ravel()), (0,0,255), 3) #color order is B,G,R
+		img = cv2.line(img, tuple(axisPoints[3].ravel()), tuple(axisPoints[1].ravel()), (0,255,0), 3)
+		img = cv2.line(img, tuple(axisPoints[3].ravel()), tuple(axisPoints[2].ravel()), (255,0,0), 3)
+
+		if aruco_id != None:
+			font = cv2.FONT_HERSHEY_SIMPLEX
+			loc = tuple(axisPoints[3].ravel())
+			fscale = 0.5
+			fc = (255,255,255)
+			thk = 2
+			img = cv2.putText( img, 'ID:{}'.format( aruco_id ), loc, font, fscale, fc, thk, cv2.LINE_AA )
+
+		return img
+
+
 
 
 
@@ -226,11 +212,26 @@ class ArucoOverlayNode( object ):
 
 def main( ):
 
+	# Set up argument parser 
+	parser = argparse.ArgumentParser( description="ROS node to overlay image annotations on found Aruco markers" )
+	parser.add_argument( "-n", "--node_name", help="Name of this ROS node instance", type=str )
+	parser.add_argument( "-i", "--image_name", help="Name of Image subscription", type=str )
+	parser.add_argument( "-c", "--cam_info", help="Name of CameraInfo subscription", type=str )
+	parser.add_argument( "-t", "--transforms", help="Name of FiducialTransforms subscription", type=str )
+	parser.add_argument( "-v", "--vertices", help="Name of FiducialArray", type=str )
 
-	args = rospy.myargv( argv=sys.argv )
+
 	# Note arg[0] is calling filename
-	aruco_overlay_node = ArucoOverlayNode( name=args[1], image_in=args[2], intrinsics=args[3], \
-		extrinsics=args[4], fiducials=args[5] )
+	args = parser.parse_args( rospy.myargv()[1:] )
+
+	node = ArucoOverlayNode( name=args.node_name, image_in=args.image_name, cam_info=args.cam_info,  \
+		fid_trans=args.transforms, fid_verts=args.vertices ) 
+
+
+	#args = rospy.myargv( argv=sys.argv )
+	# Note arg[0] is calling filename
+	# aruco_overlay_node = ArucoOverlayNode( name=args[1], image_in=args[2], intrinsics=args[3], \
+	# 	extrinsics=args[4], fiducials=args[5] )
 
 
 	# aruco_overlay_node = ArucoOverlayNode( \
