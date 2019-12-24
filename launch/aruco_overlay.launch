@@ -21,9 +21,12 @@
 
 	<group if="$(arg Realsense)" >
 		<include file="$(find realsense2_camera)/launch/rs_infra.launch" >
-			<arg name="infra_width" value="1280" />
-			<arg name="infra_height" value="720" />
-			<arg name="infra_fps" value="15" />
+			<arg name="infra_width" 		value="1280" />
+			<arg name="infra_height" 		value="720" />
+			<arg name="infra_fps" 			value="30" />
+			<arg name="enable_infra1"       value="true"/>
+  			<arg name="enable_infra2"       value="true"/>
+
 		</include>
 		<!-- Call bash script to set needed dynamic parameters; place in the 'scripts' folder -->
 		<node name="realsense_set" pkg="aruco_overlay" type="realsense_stereo_setup.sh" required="false" />
